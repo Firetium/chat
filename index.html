@@ -1,848 +1,513 @@
-<!doctype html>
-<html lang="zh-CN" data-theme="light">
+<!DOCTYPE html>
+<html lang="zh">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>多人投票系统</title>
-
-  <!-- 在线扁平 CSS：Pico CSS v2 -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>聊天室</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
   <style>
     :root {
-      --pico-font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-      --brand: #2563eb;
-      --brand-weak: #eff6ff;
-      --ok: #16a34a;
-      --danger: #dc2626;
-      --muted: #64748b;
-      --card-border: #e2e8f0;
-      --page-bg: #f8fafc;
-      --radius-xl: 22px;
+      --md-primary: #6750A4;
+      --md-on-primary: #FFFFFF;
+      --md-primary-container: #EADDFF;
+      --md-on-primary-container: #21005D;
+      --md-secondary: #625B71;
+      --md-secondary-container: #E8DEF8;
+      --md-on-secondary-container: #1D192B;
+      --md-surface: #FFFBFE;
+      --md-surface-variant: #E7E0EC;
+      --md-on-surface: #1C1B1F;
+      --md-on-surface-variant: #49454F;
+      --md-outline: #79747E;
+      --md-outline-variant: #CAC4D0;
+      --md-background: #FFFBFE;
+      --md-error: #B3261E;
+      --md-shadow: rgba(0,0,0,0.15);
+      --md-scrim: rgba(0,0,0,0.32);
+      --radius-xs: 4px;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 28px;
+      --radius-full: 9999px;
+      --elevation-1: 0 1px 2px rgba(0,0,0,0.08), 0 1px 3px 1px rgba(0,0,0,0.06);
+      --elevation-2: 0 1px 2px rgba(0,0,0,0.10), 0 2px 6px 2px rgba(0,0,0,0.08);
+      --elevation-3: 0 4px 8px 3px rgba(0,0,0,0.10), 0 1px 3px rgba(0,0,0,0.12);
     }
 
-    html { scroll-behavior: smooth; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
+      font-family: 'Noto Sans SC', sans-serif;
+      background: #F4EFF4;
       min-height: 100vh;
-      background:
-        radial-gradient(circle at top left, rgba(37, 99, 235, 0.12), transparent 32rem),
-        var(--page-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    main.container {
-      max-width: 980px;
-      padding-block: 32px 64px;
+    /* ── Login Dialog ── */
+    .scrim {
+      position: fixed; inset: 0;
+      background: var(--md-scrim);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      animation: fadeIn 0.2s ease;
     }
-
-    [hidden] { display: none !important; }
-
-    .app-header {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 16px;
-      align-items: start;
+    .dialog {
+      background: var(--md-surface);
+      border-radius: var(--radius-xl);
+      padding: 24px;
+      width: 312px;
+      box-shadow: var(--elevation-3);
+      animation: scaleIn 0.25s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .dialog-icon {
+      width: 48px; height: 48px;
+      background: var(--md-secondary-container);
+      border-radius: var(--radius-full);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 16px;
+      color: var(--md-on-secondary-container);
+    }
+    .dialog h2 {
+      font-size: 24px; font-weight: 600;
+      color: var(--md-on-surface);
+      text-align: center;
+      margin-bottom: 8px;
+    }
+    .dialog p {
+      font-size: 14px;
+      color: var(--md-on-surface-variant);
+      text-align: center;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+    .text-field {
+      position: relative;
       margin-bottom: 24px;
     }
-
-    .eyebrow {
-      margin-bottom: 8px;
-      color: var(--brand);
-      font-size: 0.85rem;
-      font-weight: 750;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    .subtitle {
-      color: var(--muted);
-      margin: 0;
-    }
-
-    .toolbar {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-    }
-
-    .panel {
-      border: 1px solid var(--card-border);
-      border-radius: var(--radius-xl);
-      background: rgba(255, 255, 255, 0.94);
-      box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
-      padding: 24px;
-    }
-
-    .stack { display: grid; gap: 16px; }
-    .grid-list { display: grid; gap: 14px; }
-
-    .poll-card {
-      display: grid;
-      gap: 10px;
+    .text-field input {
       width: 100%;
-      border: 1px solid var(--card-border);
-      border-radius: 18px;
-      background: #fff;
-      padding: 18px;
-      text-align: left;
+      padding: 16px;
+      border: 1px solid var(--md-outline);
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 16px;
+      color: var(--md-on-surface);
+      background: transparent;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .text-field input:focus {
+      border: 2px solid var(--md-primary);
+    }
+    .text-field label {
+      position: absolute;
+      top: 50%; left: 12px;
+      transform: translateY(-50%);
+      font-size: 16px;
+      color: var(--md-on-surface-variant);
+      pointer-events: none;
+      transition: all 0.2s;
+      background: var(--md-surface);
+      padding: 0 4px;
+    }
+    .text-field input:focus ~ label,
+    .text-field input:not(:placeholder-shown) ~ label {
+      top: 0; font-size: 12px;
+      color: var(--md-primary);
+    }
+    .dialog-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+    .btn-text {
+      padding: 10px 24px;
+      border: none;
+      border-radius: var(--radius-full);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 500;
       cursor: pointer;
-      transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+      color: var(--md-primary);
+      background: transparent;
+      transition: background 0.2s;
+      letter-spacing: 0.1px;
+    }
+    .btn-text:hover { background: rgba(103,80,164,0.08); }
+    .btn-filled {
+      padding: 10px 24px;
+      border: none;
+      border-radius: var(--radius-full);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      color: var(--md-on-primary);
+      background: var(--md-primary);
+      box-shadow: var(--elevation-1);
+      transition: box-shadow 0.2s, background 0.2s;
+      letter-spacing: 0.1px;
+    }
+    .btn-filled:hover { box-shadow: var(--elevation-2); background: #7965AF; }
+    .btn-filled:active { box-shadow: none; }
+
+    /* ── Main Chat Layout ── */
+    .chat-wrap {
+      width: 420px;
+      height: 680px;
+      display: flex;
+      flex-direction: column;
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      box-shadow: var(--elevation-3);
+      background: var(--md-surface);
     }
 
-    .poll-card:hover,
-    .poll-card:focus-visible {
-      transform: translateY(-2px);
-      border-color: rgba(37, 99, 235, 0.35);
-      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.10);
+    /* ── Top App Bar ── */
+    .top-bar {
+      background: var(--md-surface);
+      padding: 0 16px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--md-outline-variant);
+      flex-shrink: 0;
     }
-
-    .poll-card h3,
-    .detail-title {
-      margin: 0;
+    .top-bar-avatar {
+      width: 40px; height: 40px;
+      border-radius: var(--radius-full);
+      background: var(--md-primary-container);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--md-on-primary-container);
+      font-size: 20px;
+    }
+    .top-bar-info { flex: 1; }
+    .top-bar-title {
+      font-size: 16px; font-weight: 600;
+      color: var(--md-on-surface);
       line-height: 1.3;
     }
+    .top-bar-sub {
+      font-size: 12px;
+      color: var(--md-on-surface-variant);
+    }
+    .online-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #4CAF50;
+      margin-right: 4px;
+      vertical-align: middle;
+    }
 
-    .meta-row {
+    /* ── Message List ── */
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 16px;
       display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      color: var(--muted);
-      font-size: 0.9rem;
+      flex-direction: column;
+      gap: 2px;
+      scroll-behavior: smooth;
+    }
+    .messages::-webkit-scrollbar { width: 4px; }
+    .messages::-webkit-scrollbar-thumb {
+      background: var(--md-outline-variant);
+      border-radius: 2px;
     }
 
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      border-radius: 999px;
-      background: #f1f5f9;
-      color: #334155;
-      padding: 4px 10px;
-      font-size: 0.82rem;
-      font-weight: 650;
+    .msg-group { display: flex; flex-direction: column; margin: 4px 0; }
+    .msg-group.mine { align-items: flex-end; }
+    .msg-group.others { align-items: flex-start; }
+
+    .msg-meta {
+      font-size: 11px;
+      color: var(--md-on-surface-variant);
+      margin-bottom: 2px;
+      padding: 0 12px;
     }
 
-    .empty-state {
-      border: 1px dashed #cbd5e1;
-      border-radius: var(--radius-xl);
-      padding: 34px 22px;
-      text-align: center;
-      color: var(--muted);
-      background: #fff;
-    }
-
-    .option-line {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 10px;
-      align-items: center;
-    }
-
-    .option-choice {
+    .bubble {
+      max-width: 72%;
+      padding: 10px 16px;
+      font-size: 14px;
+      line-height: 1.5;
+      word-break: break-word;
       position: relative;
-      display: grid;
-      gap: 8px;
-      width: 100%;
-      border: 1px solid var(--card-border);
-      border-radius: 18px;
-      background: #fff;
-      padding: 16px;
-      text-align: left;
-      cursor: pointer;
-      transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
+      animation: bubbleIn 0.2s ease;
+    }
+    .msg-group.mine .bubble {
+      background: var(--md-primary-container);
+      color: var(--md-on-primary-container);
+      border-radius: var(--radius-lg) var(--radius-lg) var(--radius-xs) var(--radius-lg);
+    }
+    .msg-group.others .bubble {
+      background: var(--md-surface-variant);
+      color: var(--md-on-surface);
+      border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--radius-xs);
+    }
+    .bubble .time {
+      display: block;
+      font-size: 10px;
+      margin-top: 4px;
+      opacity: 0.6;
+      text-align: right;
     }
 
-    .option-choice:hover:not(:disabled) {
-      transform: translateY(-1px);
-      border-color: rgba(37, 99, 235, 0.45);
-      background: var(--brand-weak);
-    }
-
-    .option-choice[aria-pressed="true"] {
-      border-color: var(--brand);
-      background: var(--brand-weak);
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
-    }
-
-    .option-choice:disabled {
-      cursor: default;
-      opacity: 0.92;
-    }
-
-    .result-row {
-      display: grid;
-      gap: 8px;
-      margin-top: 14px;
-    }
-
-    .result-head {
+    /* ── Date Chip ── */
+    .date-chip {
       display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      color: #0f172a;
-      font-weight: 700;
-    }
-
-    .progress-track {
-      overflow: hidden;
-      height: 12px;
-      border-radius: 999px;
-      background: #e2e8f0;
-    }
-
-    .progress-fill {
-      height: 100%;
-      width: 0%;
-      border-radius: inherit;
-      background: var(--brand);
-      transition: width 280ms ease;
-    }
-
-    .notice {
-      border: 1px solid #bfdbfe;
-      border-radius: 16px;
-      background: #eff6ff;
-      color: #1e3a8a;
-      padding: 12px 14px;
-      margin-bottom: 16px;
-    }
-
-    .notice.error {
-      border-color: #fecaca;
-      background: #fef2f2;
-      color: #991b1b;
-    }
-
-    .notice.success {
-      border-color: #bbf7d0;
-      background: #f0fdf4;
-      color: #166534;
-    }
-
-    .small-muted {
-      color: var(--muted);
-      font-size: 0.9rem;
-    }
-
-    .detail-actions {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-top: 10px;
-    }
-
-    .status-dot {
-      display: inline-flex;
       align-items: center;
+      justify-content: center;
+      margin: 8px 0;
+    }
+    .date-chip span {
+      font-size: 11px;
+      color: var(--md-on-surface-variant);
+      background: var(--md-surface-variant);
+      padding: 4px 12px;
+      border-radius: var(--radius-full);
+    }
+
+    /* ── Input Area ── */
+    .input-area {
+      padding: 12px 16px;
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      border-top: 1px solid var(--md-outline-variant);
+      background: var(--md-surface);
+      flex-shrink: 0;
+    }
+    .input-wrap {
+      flex: 1;
+      background: var(--md-surface-variant);
+      border-radius: var(--radius-xl);
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+    }
+    .input-wrap input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      font-family: inherit;
+      font-size: 14px;
+      color: var(--md-on-surface);
+      outline: none;
+      line-height: 1.5;
+    }
+    .input-wrap input::placeholder { color: var(--md-on-surface-variant); }
+
+    /* FAB send button */
+    .fab-send {
+      width: 48px; height: 48px;
+      border-radius: var(--radius-md);
+      background: var(--md-primary-container);
+      color: var(--md-on-primary-container);
+      border: none;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: var(--elevation-1);
+      transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1);
+      flex-shrink: 0;
+    }
+    .fab-send:hover {
+      background: var(--md-primary);
+      color: var(--md-on-primary);
+      box-shadow: var(--elevation-2);
+      transform: scale(1.05);
+    }
+    .fab-send:active { transform: scale(0.95); }
+    .fab-send .material-icons-round { font-size: 22px; }
+
+    /* ── System Message ── */
+    .sys-msg {
+      text-align: center;
+      font-size: 12px;
+      color: var(--md-on-surface-variant);
+      padding: 4px 0;
+    }
+
+    /* ── Animations ── */
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes scaleIn {
+      from { opacity: 0; transform: scale(0.85); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    @keyframes bubbleIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Loading indicator ── */
+    .loading {
+      display: flex;
+      justify-content: center;
+      padding: 16px;
       gap: 6px;
     }
-
-    .status-dot::before {
-      content: "";
-      width: 9px;
-      height: 9px;
-      border-radius: 999px;
-      background: #94a3b8;
+    .loading span {
+      width: 8px; height: 8px;
+      background: var(--md-outline-variant);
+      border-radius: 50%;
+      animation: bounce 1.2s infinite ease-in-out;
     }
-
-    .status-dot.online::before { background: var(--ok); }
-    .status-dot.offline::before { background: var(--danger); }
-
-    @media (max-width: 720px) {
-      main.container { padding-inline: 14px; }
-      .app-header { grid-template-columns: 1fr; }
-      .toolbar { justify-content: stretch; }
-      .toolbar button { width: 100%; }
-      .panel { padding: 18px; }
-      .option-line { grid-template-columns: 1fr; }
+    .loading span:nth-child(2) { animation-delay: 0.2s; }
+    .loading span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce {
+      0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+      40% { transform: scale(1); opacity: 1; }
     }
   </style>
 </head>
-
 <body>
-  <main class="container">
-    <header class="app-header">
-      <div>
-        <p class="eyebrow">Supabase Realtime Poll</p>
-        <h1>多人投票系统</h1>
-        <p class="subtitle">创建投票、分享链接、实时查看结果。</p>
+
+<!-- 登录弹窗 -->
+<div class="scrim" id="loginScrim">
+  <div class="dialog">
+    <div class="dialog-icon">
+      <span class="material-icons-round">chat_bubble</span>
+    </div>
+    <h2>加入FiretiumChat</h2>
+    <p>输入一个昵称开始聊天</p>
+    <div class="text-field">
+      <input type="text" id="nicknameInput" placeholder=" " maxlength="16"
+        onkeydown="if(event.key==='Enter') joinChat()">
+      <label>昵称</label>
+    </div>
+    <div class="dialog-actions">
+      <button class="btn-filled" onclick="joinChat()">进入</button>
+    </div>
+  </div>
+</div>
+
+<!-- 聊天主界面 -->
+<div class="chat-wrap">
+  <div class="top-bar">
+    <div class="top-bar-avatar">
+      <span class="material-icons-round">forum</span>
+    </div>
+    <div class="top-bar-info">
+      <div class="top-bar-title">Firetium Chat</div>
+      <div class="top-bar-sub"><span class="online-dot"></span>Online</div>
+    </div>
+  </div>
+
+  <div class="messages" id="messages">
+    <div class="loading"><span></span><span></span><span></span></div>
+  </div>
+
+  <div class="input-area">
+    <div class="input-wrap">
+      <input type="text" id="msgInput" placeholder="发送消息…" maxlength="200"
+        onkeydown="if(event.key==='Enter') sendMsg()">
+    </div>
+    <button class="fab-send" onclick="sendMsg()">
+      <span class="material-icons-round">send</span>
+    </button>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://ajhpovaetfpenxnehxyr.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqaHBvdmFldGZwZW54bmVoeHlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyMzg5ODEsImV4cCI6MjA5NTgxNDk4MX0.k4zb6OJsbr0HvTuzsagG0g4myO2os0vMW8Bi_blHFTA';
+
+  const { createClient } = supabase;
+  const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  let myName = '';
+  let lastDate = '';
+
+  function joinChat() {
+    const name = document.getElementById('nicknameInput').value.trim();
+    if (!name) { document.getElementById('nicknameInput').focus(); return; }
+    myName = name;
+    document.getElementById('loginScrim').style.display = 'none';
+    init();
+  }
+
+  async function init() {
+    await loadHistory();
+    subscribe();
+  }
+
+  async function loadHistory() {
+    const { data } = await db
+      .from('messages')
+      .select('*')
+      .order('created_at', { ascending: true })
+      .limit(80);
+
+    document.getElementById('messages').innerHTML = '';
+    lastDate = '';
+    if (data) data.forEach(m => appendMsg(m));
+    scrollBottom();
+  }
+
+  function subscribe() {
+    db.channel('public-chat')
+      .on('postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages' },
+        payload => {
+          appendMsg(payload.new);
+          scrollBottom();
+        })
+      .subscribe();
+  }
+
+  function appendMsg(msg) {
+    const container = document.getElementById('messages');
+    const isMine = msg.username === myName;
+
+    // Date chip
+    const msgDate = new Date(msg.created_at).toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' });
+    if (msgDate !== lastDate) {
+      const chip = document.createElement('div');
+      chip.className = 'date-chip';
+      chip.innerHTML = `<span>${msgDate}</span>`;
+      container.appendChild(chip);
+      lastDate = msgDate;
+    }
+
+    const time = new Date(msg.created_at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+
+    const group = document.createElement('div');
+    group.className = `msg-group ${isMine ? 'mine' : 'others'}`;
+    group.innerHTML = `
+      ${!isMine ? `<div class="msg-meta">${escHtml(msg.username)}</div>` : ''}
+      <div class="bubble">
+        ${escHtml(msg.content)}
+        <span class="time">${time}</span>
       </div>
-      <div class="toolbar">
-        <button id="newPollBtn" type="button">创建新投票</button>
-        <button id="homeBtn" class="secondary" type="button">返回首页</button>
-      </div>
-    </header>
-
-    <div id="notice" aria-live="polite"></div>
-
-    <section id="listPage" class="stack">
-      <article class="panel stack">
-        <div>
-          <h2>投票列表</h2>
-          <p class="small-muted">最新创建的投票会显示在最上面。</p>
-        </div>
-        <div id="pollList" class="grid-list"></div>
-      </article>
-    </section>
-
-    <section id="createPage" class="stack" hidden>
-      <article class="panel stack">
-        <div>
-          <h2>创建新投票</h2>
-          <p class="small-muted">至少 2 个选项；建议不要超过 12 个，便于手机端查看。</p>
-        </div>
-
-        <label>
-          投票标题
-          <input id="pollTitle" type="text" maxlength="80" placeholder="例如：周末去哪玩？" autocomplete="off" />
-        </label>
-
-        <div class="stack">
-          <label>投票选项</label>
-          <div id="optionsBox" class="stack"></div>
-          <button id="addOptionBtn" class="secondary outline" type="button">+ 添加选项</button>
-        </div>
-
-        <div class="detail-actions">
-          <button id="submitPollBtn" type="button">创建投票</button>
-          <button id="cancelCreateBtn" class="secondary" type="button">取消</button>
-        </div>
-      </article>
-    </section>
-
-    <section id="detailPage" class="stack" hidden>
-      <article class="panel stack">
-        <div>
-          <p id="realtimeStatus" class="small-muted status-dot">实时同步准备中</p>
-          <h2 id="detailTitle" class="detail-title"></h2>
-          <p id="detailMeta" class="small-muted"></p>
-          <div class="detail-actions">
-            <button id="copyLinkBtn" class="secondary outline" type="button">复制投票链接</button>
-            <button id="refreshBtn" class="secondary outline" type="button">刷新结果</button>
-          </div>
-        </div>
-
-        <div id="voteState" class="notice" hidden></div>
-        <div id="voteOptions" class="stack"></div>
-        <button id="submitVoteBtn" type="button" disabled>提交投票</button>
-
-        <hr />
-        <div>
-          <h3>投票结果</h3>
-          <p id="resultSummary" class="small-muted"></p>
-          <div id="results"></div>
-        </div>
-      </article>
-    </section>
-  </main>
-
-  <script>
-    // 1) 替换成你的 Supabase 配置
-    const SUPABASE_URL = "你的Supabase Project URL";
-    const SUPABASE_ANON_KEY = "你的Supabase anon public key";
-
-    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    const state = {
-      user: null,
-      currentPoll: null,
-      selectedOption: "",
-      hasVoted: false,
-      voteChannel: null,
-      booted: false
-    };
-
-    const $ = (selector) => document.querySelector(selector);
-
-    const pages = {
-      list: $("#listPage"),
-      create: $("#createPage"),
-      detail: $("#detailPage")
-    };
-
-    const notice = $("#notice");
-    const pollList = $("#pollList");
-    const optionsBox = $("#optionsBox");
-    const submitPollBtn = $("#submitPollBtn");
-    const submitVoteBtn = $("#submitVoteBtn");
-
-    document.addEventListener("DOMContentLoaded", boot);
-    window.addEventListener("hashchange", route);
-
-    async function boot() {
-      bindEvents();
-      initCreateForm();
-
-      try {
-        assertConfig();
-        state.user = await ensureAnonymousUser();
-        state.booted = true;
-        route();
-      } catch (error) {
-        showNotice(error.message || "初始化失败，请检查配置。", "error");
-        console.error(error);
-      }
-    }
-
-    function assertConfig() {
-      if (!SUPABASE_URL.startsWith("https://") || !SUPABASE_ANON_KEY.startsWith("ey")) {
-        throw new Error("请先在 index.html 里替换 SUPABASE_URL 和 SUPABASE_ANON_KEY。");
-      }
-    }
-
-    async function ensureAnonymousUser() {
-      const { data: sessionData, error: sessionError } = await client.auth.getSession();
-      if (sessionError) throw sessionError;
-      if (sessionData.session?.user) return sessionData.session.user;
-
-      const { data, error } = await client.auth.signInAnonymously();
-      if (error) throw error;
-      if (!data.user) throw new Error("匿名登录失败，请确认 Supabase 已开启 Anonymous provider。");
-      return data.user;
-    }
-
-    function bindEvents() {
-      $("#newPollBtn").addEventListener("click", () => { location.hash = "#/new"; });
-      $("#homeBtn").addEventListener("click", () => { location.hash = "#/"; });
-      $("#cancelCreateBtn").addEventListener("click", () => { location.hash = "#/"; });
-      $("#addOptionBtn").addEventListener("click", () => addOptionInput());
-      submitPollBtn.addEventListener("click", createPoll);
-      submitVoteBtn.addEventListener("click", submitVote);
-      $("#copyLinkBtn").addEventListener("click", copyCurrentLink);
-      $("#refreshBtn").addEventListener("click", () => {
-        if (state.currentPoll) loadResults(state.currentPoll.id, state.currentPoll.options);
-      });
-      $("#pollTitle").addEventListener("input", validateCreateForm);
-      optionsBox.addEventListener("input", validateCreateForm);
-    }
-
-    async function route() {
-      if (!state.booted) return;
-      clearNotice();
-      const hash = location.hash || "#/";
-
-      if (hash === "#/new") {
-        await stopRealtime();
-        showPage("create");
-        initCreateForm();
-        return;
-      }
-
-      const match = hash.match(/^#\/poll\/(.+)$/);
-      if (match) {
-        showPage("detail");
-        await loadPollDetail(decodeURIComponent(match[1]));
-        return;
-      }
-
-      await stopRealtime();
-      showPage("list");
-      await loadPollList();
-    }
-
-    function showPage(name) {
-      for (const [pageName, element] of Object.entries(pages)) {
-        element.hidden = pageName !== name;
-      }
-    }
-
-    function showNotice(message, type = "info") {
-      notice.className = `notice ${type === "error" ? "error" : type === "success" ? "success" : ""}`.trim();
-      notice.textContent = message;
-      notice.hidden = false;
-    }
-
-    function clearNotice() {
-      notice.textContent = "";
-      notice.className = "";
-      notice.hidden = true;
-    }
-
-    function formatDate(value) {
-      return new Intl.DateTimeFormat("zh-CN", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit"
-      }).format(new Date(value));
-    }
-
-    async function loadPollList() {
-      pollList.replaceChildren(renderLoading("正在加载投票列表…"));
-
-      const { data, error } = await client
-        .from("polls")
-        .select("id,title,options,created_at")
-        .order("created_at", { ascending: false })
-        .limit(100);
-
-      if (error) {
-        pollList.replaceChildren(renderEmpty("加载失败，请检查 RLS 的 SELECT 策略。"));
-        console.error(error);
-        return;
-      }
-
-      if (!data?.length) {
-        pollList.replaceChildren(renderEmpty("暂无投票，点击右上角创建第一个投票。"));
-        return;
-      }
-
-      pollList.replaceChildren(...data.map(renderPollCard));
-    }
-
-    function renderPollCard(poll) {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "poll-card";
-      button.addEventListener("click", () => {
-        location.hash = `#/poll/${encodeURIComponent(poll.id)}`;
-      });
-
-      const title = document.createElement("h3");
-      title.textContent = poll.title || "未命名投票";
-
-      const meta = document.createElement("div");
-      meta.className = "meta-row";
-      meta.append(
-        makePill(`${poll.options?.length || 0} 个选项`),
-        makePill(`创建于 ${formatDate(poll.created_at)}`)
-      );
-
-      button.append(title, meta);
-      return button;
-    }
-
-    function makePill(text) {
-      const span = document.createElement("span");
-      span.className = "pill";
-      span.textContent = text;
-      return span;
-    }
-
-    function renderEmpty(text) {
-      const div = document.createElement("div");
-      div.className = "empty-state";
-      div.textContent = text;
-      return div;
-    }
-
-    function renderLoading(text) {
-      const div = document.createElement("article");
-      div.setAttribute("aria-busy", "true");
-      div.textContent = text;
-      return div;
-    }
-
-    function initCreateForm() {
-      $("#pollTitle").value = "";
-      optionsBox.replaceChildren();
-      addOptionInput("");
-      addOptionInput("");
-      validateCreateForm();
-    }
-
-    function addOptionInput(value = "") {
-      if (optionsBox.children.length >= 12) {
-        showNotice("最多添加 12 个选项。", "error");
-        return;
-      }
-
-      const line = document.createElement("div");
-      line.className = "option-line";
-
-      const input = document.createElement("input");
-      input.type = "text";
-      input.maxLength = 50;
-      input.placeholder = `选项 ${optionsBox.children.length + 1}`;
-      input.className = "option-input";
-      input.value = value;
-
-      const remove = document.createElement("button");
-      remove.type = "button";
-      remove.className = "secondary outline";
-      remove.textContent = "删除";
-      remove.addEventListener("click", () => {
-        line.remove();
-        updateRemoveButtons();
-        validateCreateForm();
-      });
-
-      line.append(input, remove);
-      optionsBox.append(line);
-      updateRemoveButtons();
-      validateCreateForm();
-      input.focus();
-    }
-
-    function updateRemoveButtons() {
-      const buttons = optionsBox.querySelectorAll("button");
-      buttons.forEach((button) => {
-        button.disabled = optionsBox.children.length <= 2;
-      });
-    }
-
-    function readCreateForm() {
-      const title = $("#pollTitle").value.trim();
-      const options = Array.from(optionsBox.querySelectorAll("input"))
-        .map((input) => input.value.trim())
-        .filter(Boolean);
-      return { title, options };
-    }
-
-    function validateCreateForm() {
-      const { title, options } = readCreateForm();
-      const normalized = options.map((item) => item.toLocaleLowerCase());
-      const hasDuplicatedOption = new Set(normalized).size !== normalized.length;
-      submitPollBtn.disabled = !title || options.length < 2 || hasDuplicatedOption;
-    }
-
-    async function createPoll() {
-      const { title, options } = readCreateForm();
-      const normalized = options.map((item) => item.toLocaleLowerCase());
-
-      if (!title) return showNotice("请填写投票标题。", "error");
-      if (options.length < 2) return showNotice("请至少填写 2 个投票选项。", "error");
-      if (new Set(normalized).size !== normalized.length) return showNotice("选项不能重复。", "error");
-
-      submitPollBtn.setAttribute("aria-busy", "true");
-      submitPollBtn.disabled = true;
-
-      const { data, error } = await client
-        .from("polls")
-        .insert([{ title, options }])
-        .select("id")
-        .single();
-
-      submitPollBtn.removeAttribute("aria-busy");
-      validateCreateForm();
-
-      if (error) {
-        console.error(error);
-        showNotice("创建失败：请检查 polls 表的 INSERT RLS 策略。", "error");
-        return;
-      }
-
-      showNotice("投票创建成功。", "success");
-      location.hash = `#/poll/${encodeURIComponent(data.id)}`;
-    }
-
-    async function loadPollDetail(pollId) {
-      await stopRealtime();
-      state.currentPoll = null;
-      state.selectedOption = "";
-      state.hasVoted = false;
-      submitVoteBtn.disabled = true;
-      submitVoteBtn.textContent = "提交投票";
-      $("#voteOptions").replaceChildren(renderLoading("正在加载投票…"));
-      $("#results").replaceChildren();
-      $("#resultSummary").textContent = "";
-      setVoteState("", false);
-      setRealtimeStatus("实时同步准备中", "");
-
-      const { data: poll, error: pollError } = await client
-        .from("polls")
-        .select("id,title,options,created_at")
-        .eq("id", pollId)
-        .single();
-
-      if (pollError || !poll) {
-        console.error(pollError);
-        showNotice("找不到这个投票，或当前 RLS 不允许读取。", "error");
-        location.hash = "#/";
-        return;
-      }
-
-      state.currentPoll = poll;
-      $("#detailTitle").textContent = poll.title || "未命名投票";
-      $("#detailMeta").textContent = `${poll.options.length} 个选项 · 创建于 ${formatDate(poll.created_at)}`;
-
-      const { data: ownVotes, error: ownVoteError } = await client
-        .from("votes")
-        .select("option")
-        .eq("poll_id", poll.id)
-        .eq("user_id", state.user.id)
-        .limit(1);
-
-      if (ownVoteError) {
-        console.error(ownVoteError);
-        showNotice("读取你的投票状态失败，请检查 votes 的 SELECT 策略。", "error");
-      }
-
-      state.hasVoted = Boolean(ownVotes?.length);
-      renderVoteOptions(poll.options, ownVotes?.[0]?.option || "");
-      await loadResults(poll.id, poll.options);
-      subscribeVotes(poll.id, poll.options);
-    }
-
-    function renderVoteOptions(options, votedOption) {
-      const box = $("#voteOptions");
-      box.replaceChildren();
-
-      for (const option of options) {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "option-choice";
-        button.textContent = option;
-        button.disabled = state.hasVoted;
-        button.setAttribute("aria-pressed", votedOption === option ? "true" : "false");
-        button.addEventListener("click", () => selectOption(option, button));
-        box.append(button);
-      }
-
-      if (state.hasVoted) {
-        setVoteState(`你已经投过票：${votedOption}`, true);
-        submitVoteBtn.disabled = true;
-        submitVoteBtn.textContent = "已投票";
-      } else {
-        setVoteState("选择一个选项后提交；每个匿名用户在同一投票中只能投一次。", true);
-        submitVoteBtn.disabled = true;
-        submitVoteBtn.textContent = "提交投票";
-      }
-    }
-
-    function selectOption(option, button) {
-      if (state.hasVoted) return;
-      state.selectedOption = option;
-
-      document.querySelectorAll(".option-choice").forEach((node) => {
-        node.setAttribute("aria-pressed", node === button ? "true" : "false");
-      });
-
-      submitVoteBtn.disabled = false;
-    }
-
-    function setVoteState(text, visible) {
-      const box = $("#voteState");
-      box.textContent = text;
-      box.hidden = !visible;
-    }
-
-    async function submitVote() {
-      if (!state.currentPoll || !state.selectedOption || state.hasVoted) return;
-
-      submitVoteBtn.setAttribute("aria-busy", "true");
-      submitVoteBtn.disabled = true;
-
-      const { error } = await client.from("votes").insert([{
-        poll_id: state.currentPoll.id,
-        option: state.selectedOption,
-        user_id: state.user.id
-      }]);
-
-      submitVoteBtn.removeAttribute("aria-busy");
-
-      if (error) {
-        console.error(error);
-        if (error.code === "23505") {
-          showNotice("你已经投过这个投票了。", "error");
-        } else {
-          showNotice("投票失败：请检查 votes 表的 INSERT 策略和唯一索引。", "error");
-        }
-        await loadPollDetail(state.currentPoll.id);
-        return;
-      }
-
-      state.hasVoted = true;
-      showNotice("投票成功，结果已更新。", "success");
-      await loadPollDetail(state.currentPoll.id);
-    }
-
-    async function loadResults(pollId, options) {
-      const resultsBox = $("#results");
-      resultsBox.replaceChildren(renderLoading("正在加载结果…"));
-
-      const { data: votes, error } = await client
-        .from("votes")
-        .select("option")
-        .eq("poll_id", pollId);
-
-      if (error) {
-        console.error(error);
-        resultsBox.replaceChildren(renderEmpty("结果加载失败，请检查 votes 的 SELECT 策略。"));
-        return;
-      }
-
-      const counts = Object.fromEntries(options.map((option) => [option, 0]));
-      for (const vote of votes || []) {
-        if (Object.prototype.hasOwnProperty.call(counts, vote.option)) {
-          counts[vote.option] += 1;
-        }
-      }
-
-      const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
-      $("#resultSummary").textContent = `当前共 ${total} 票`;
-
-      const nodes = Object.entries(counts).map(([option, count]) => {
-        const percent = total ? Math.round((count / total) * 1000) / 10 : 0;
-
-        const row = document.createElement("div");
-        row.className = "result-row";
-
-        const head = document.createElement("div");
-        head.className = "result-head";
-
-        const name = document.createElement("span");
-        name.textContent = option;
-
-        const value = document.createElement("span");
-        value.textContent = `${count} 票 · ${percent}%`;
-
-        const track = document.createElement("div");
-        track.className = "progress-track";
-        track.setAttribute("aria-label", `${option} ${percent}%`);
-
-        const fill = document.createElement("div");
-        fill.className = "progress-fill";
-        fill.style.width = `${percent}%`;
-
-        head.append(name, value);
-        track.append(fill);
-        row.append(head, track);
-        return row;
-      });
-
-      resultsBox.replaceChildren(...nodes);
-    }
-
-    async function subscribeVotes(pollId, options) {
-      state.voteChannel = client
-        .channel(`votes:${pollId}`)
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "votes", filter: `poll_id=eq.${pollId}` },
-          () => loadResults(pollId, options)
-        )
-        .subscribe((status) => {
-          if (status === "SUBSCRIBED") setRealtimeStatus("实时同步已连接", "online");
-          if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") setRealtimeStatus("实时同步未连接，可手动刷新", "offline");
-        });
-    }
-
-    async function stopRealtime() {
-      if (state.voteChannel) {
-        await client.removeChannel(state.voteChannel);
-        state.voteChannel = null;
-      }
-    }
-
-    function setRealtimeStatus(text, mode) {
-      const node = $("#realtimeStatus");
-      node.textContent = text;
-      node.className = `small-muted status-dot ${mode || ""}`.trim();
-    }
-
-    async function copyCurrentLink() {
-      try {
-        await navigator.clipboard.writeText(location.href);
-        showNotice("链接已复制，可以发给别人投票。", "success");
-      } catch {
-        showNotice("复制失败，请直接复制浏览器地址栏里的链接。", "error");
-      }
-    }
-  </script>
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"db18d8aaa86040e9a6f64f3d0e6d8303","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+    `;
+    container.appendChild(group);
+  }
+
+  async function sendMsg() {
+    const input = document.getElementById('msgInput');
+    const text = input.value.trim();
+    if (!text || !myName) return;
+    input.value = '';
+    await db.from('messages').insert({ username: myName, content: text });
+  }
+
+  function scrollBottom() {
+    const el = document.getElementById('messages');
+    el.scrollTop = el.scrollHeight;
+  }
+
+  function escHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+</script>
 </body>
 </html>
