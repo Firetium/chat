@@ -1,4 +1,4 @@
-#💬 FiretiumChat
+# 💬 FiretiumChat
 一个基于 **GitHub Pages + Supabase** 构建的聊天室。
 
 ---
