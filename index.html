@@ -8,412 +8,246 @@
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    :root {
-      --md-primary: #6750A4;
-      --md-on-primary: #FFFFFF;
-      --md-primary-container: #EADDFF;
-      --md-on-primary-container: #21005D;
-      --md-secondary: #625B71;
-      --md-secondary-container: #E8DEF8;
-      --md-on-secondary-container: #1D192B;
-      --md-surface: #FFFBFE;
-      --md-surface-variant: #E7E0EC;
-      --md-on-surface: #1C1B1F;
-      --md-on-surface-variant: #49454F;
-      --md-outline: #79747E;
-      --md-outline-variant: #CAC4D0;
-      --md-background: #FFFBFE;
-      --md-error: #B3261E;
-      --md-shadow: rgba(0,0,0,0.15);
-      --md-scrim: rgba(0,0,0,0.32);
-      --radius-xs: 4px;
-      --radius-sm: 8px;
-      --radius-md: 12px;
-      --radius-lg: 16px;
-      --radius-xl: 28px;
-      --radius-full: 9999px;
-      --elevation-1: 0 1px 2px rgba(0,0,0,0.08), 0 1px 3px 1px rgba(0,0,0,0.06);
-      --elevation-2: 0 1px 2px rgba(0,0,0,0.10), 0 2px 6px 2px rgba(0,0,0,0.08);
-      --elevation-3: 0 4px 8px 3px rgba(0,0,0,0.10), 0 1px 3px rgba(0,0,0,0.12);
-    }
+	:root {
+	  --md-primary: #6750A4;
+	  --md-on-primary: #FFFFFF;
+	  --md-primary-container: #EADDFF;
+	  --md-on-primary-container: #21005D;
+	  --md-secondary-container: #E8DEF8;
+	  --md-on-secondary-container: #1D192B;
+	  --md-surface: #FFFBFE;
+	  --md-surface-variant: #E7E0EC;
+	  --md-on-surface: #1C1B1F;
+	  --md-on-surface-variant: #49454F;
+	  --md-outline: #79747E;
+	  --md-outline-variant: #CAC4D0;
+	  --md-scrim: rgba(0,0,0,0.32);
+	  --radius-xs: 4px; --radius-sm: 8px; --radius-md: 12px;
+	  --radius-lg: 16px; --radius-xl: 28px; --radius-full: 9999px;
+	  --e1: 0 1px 2px rgba(0,0,0,0.08),0 1px 3px 1px rgba(0,0,0,0.06);
+	  --e2: 0 1px 2px rgba(0,0,0,0.10),0 2px 6px 2px rgba(0,0,0,0.08);
+	  --e3: 0 4px 8px 3px rgba(0,0,0,0.10),0 1px 3px rgba(0,0,0,0.12);
+	}
+	* { box-sizing: border-box; margin: 0; padding: 0; }
+	body {
+	  font-family: 'Noto Sans SC', sans-serif;
+	  background: #F4EFF4;
+	  min-height: 100vh;
+	  display: flex; align-items: center; justify-content: center;
+	}
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+	/* ── Scrim / Dialog ── */
+	.scrim {
+	  position: fixed; inset: 0;
+	  background: var(--md-scrim);
+	  display: flex; align-items: center; justify-content: center;
+	  z-index: 100;
+	}
+	.scrim.hidden { display: none; }
+	.dialog {
+	  background: var(--md-surface);
+	  border-radius: var(--radius-xl);
+	  padding: 24px; width: 320px;
+	  box-shadow: var(--e3);
+	  animation: scaleIn 0.25s cubic-bezier(0.34,1.56,0.64,1);
+	}
+	.dialog-icon {
+	  width: 48px; height: 48px;
+	  background: var(--md-secondary-container);
+	  border-radius: var(--radius-full);
+	  display: flex; align-items: center; justify-content: center;
+	  margin: 0 auto 16px;
+	  color: var(--md-on-secondary-container);
+	}
+	.dialog h2 { font-size: 22px; font-weight: 600; color: var(--md-on-surface); text-align: center; margin-bottom: 8px; }
+	.dialog p { font-size: 13px; color: var(--md-on-surface-variant); text-align: center; margin-bottom: 20px; line-height: 1.6; }
+	.text-field { position: relative; margin-bottom: 20px; }
+	.text-field input {
+	  width: 100%; padding: 16px;
+	  border: 1px solid var(--md-outline);
+	  border-radius: var(--radius-sm);
+	  font-family: inherit; font-size: 15px;
+	  color: var(--md-on-surface); background: transparent; outline: none;
+	  transition: border 0.2s;
+	}
+	.text-field input:focus { border: 2px solid var(--md-primary); }
+	.text-field label {
+	  position: absolute; top: 50%; left: 12px;
+	  transform: translateY(-50%);
+	  font-size: 15px; color: var(--md-on-surface-variant);
+	  pointer-events: none; transition: all 0.2s;
+	  background: var(--md-surface); padding: 0 4px;
+	}
+	.text-field input:focus ~ label,
+	.text-field input:not(:placeholder-shown) ~ label {
+	  top: 0; font-size: 11px; color: var(--md-primary);
+	}
+	.dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
+	.btn-filled {
+	  padding: 10px 24px; border: none;
+	  border-radius: var(--radius-full);
+	  font-family: inherit; font-size: 14px; font-weight: 500;
+	  cursor: pointer; color: var(--md-on-primary);
+	  background: var(--md-primary); box-shadow: var(--e1);
+	  transition: box-shadow 0.2s, background 0.2s;
+	}
+	.btn-filled:hover { box-shadow: var(--e2); background: #7965AF; }
+	.btn-filled:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    body {
-      font-family: 'Noto Sans SC', sans-serif;
-      background: #F4EFF4;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
+	/* 发送中提示 */
+	.send-hint {
+	  font-size: 12px; color: var(--md-on-surface-variant);
+	  text-align: center; margin-top: -12px; margin-bottom: 16px;
+	  min-height: 18px;
+	}
+	.send-hint.success { color: #388E3C; }
+	.send-hint.error { color: #B3261E; }
 
-    /* ── Login Dialog ── */
-    .scrim {
-      position: fixed; inset: 0;
-      background: var(--md-scrim);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 100;
-      animation: fadeIn 0.2s ease;
-    }
-    .dialog {
-      background: var(--md-surface);
-      border-radius: var(--radius-xl);
-      padding: 24px;
-      width: 312px;
-      box-shadow: var(--elevation-3);
-      animation: scaleIn 0.25s cubic-bezier(0.34,1.56,0.64,1);
-    }
-    .dialog-icon {
-      width: 48px; height: 48px;
-      background: var(--md-secondary-container);
-      border-radius: var(--radius-full);
-      display: flex; align-items: center; justify-content: center;
-      margin: 0 auto 16px;
-      color: var(--md-on-secondary-container);
-    }
-    .dialog h2 {
-      font-size: 24px; font-weight: 600;
-      color: var(--md-on-surface);
-      text-align: center;
-      margin-bottom: 8px;
-    }
-    .dialog p {
-      font-size: 14px;
-      color: var(--md-on-surface-variant);
-      text-align: center;
-      margin-bottom: 24px;
-      line-height: 1.5;
-    }
-    .text-field {
-      position: relative;
-      margin-bottom: 24px;
-    }
-    .text-field input {
-      width: 100%;
-      padding: 16px;
-      border: 1px solid var(--md-outline);
-      border-radius: var(--radius-sm);
-      font-family: inherit;
-      font-size: 16px;
-      color: var(--md-on-surface);
-      background: transparent;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    .text-field input:focus {
-      border: 2px solid var(--md-primary);
-    }
-    .text-field label {
-      position: absolute;
-      top: 50%; left: 12px;
-      transform: translateY(-50%);
-      font-size: 16px;
-      color: var(--md-on-surface-variant);
-      pointer-events: none;
-      transition: all 0.2s;
-      background: var(--md-surface);
-      padding: 0 4px;
-    }
-    .text-field input:focus ~ label,
-    .text-field input:not(:placeholder-shown) ~ label {
-      top: 0; font-size: 12px;
-      color: var(--md-primary);
-    }
-    .dialog-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-    }
-    .btn-text {
-      padding: 10px 24px;
-      border: none;
-      border-radius: var(--radius-full);
-      font-family: inherit;
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      color: var(--md-primary);
-      background: transparent;
-      transition: background 0.2s;
-      letter-spacing: 0.1px;
-    }
-    .btn-text:hover { background: rgba(103,80,164,0.08); }
-    .btn-filled {
-      padding: 10px 24px;
-      border: none;
-      border-radius: var(--radius-full);
-      font-family: inherit;
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      color: var(--md-on-primary);
-      background: var(--md-primary);
-      box-shadow: var(--elevation-1);
-      transition: box-shadow 0.2s, background 0.2s;
-      letter-spacing: 0.1px;
-    }
-    .btn-filled:hover { box-shadow: var(--elevation-2); background: #7965AF; }
-    .btn-filled:active { box-shadow: none; }
-
-    /* ── Main Chat Layout ── */
-    .chat-wrap {
-      width: 420px;
-      height: 680px;
-      display: flex;
-      flex-direction: column;
-      border-radius: var(--radius-xl);
-      overflow: hidden;
-      box-shadow: var(--elevation-3);
-      background: var(--md-surface);
-    }
-
-    /* ── Top App Bar ── */
-    .top-bar {
-      background: var(--md-surface);
-      padding: 0 16px;
-      height: 64px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      border-bottom: 1px solid var(--md-outline-variant);
-      flex-shrink: 0;
-    }
-    .top-bar-avatar {
-      width: 40px; height: 40px;
-      border-radius: var(--radius-full);
-      background: var(--md-primary-container);
-      display: flex; align-items: center; justify-content: center;
-      color: var(--md-on-primary-container);
-      font-size: 20px;
-    }
-    .top-bar-info { flex: 1; }
-    .top-bar-title {
-      font-size: 16px; font-weight: 600;
-      color: var(--md-on-surface);
-      line-height: 1.3;
-    }
-    .top-bar-sub {
-      font-size: 12px;
-      color: var(--md-on-surface-variant);
-    }
-    .online-dot {
-      display: inline-block;
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: #4CAF50;
-      margin-right: 4px;
-      vertical-align: middle;
-    }
-
-    /* ── Message List ── */
-    .messages {
-      flex: 1;
-      overflow-y: auto;
-      padding: 12px 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      scroll-behavior: smooth;
-    }
-    .messages::-webkit-scrollbar { width: 4px; }
-    .messages::-webkit-scrollbar-thumb {
-      background: var(--md-outline-variant);
-      border-radius: 2px;
-    }
-
-    .msg-group { display: flex; flex-direction: column; margin: 4px 0; }
-    .msg-group.mine { align-items: flex-end; }
-    .msg-group.others { align-items: flex-start; }
-
-    .msg-meta {
-      font-size: 11px;
-      color: var(--md-on-surface-variant);
-      margin-bottom: 2px;
-      padding: 0 12px;
-    }
-
-    .bubble {
-      max-width: 72%;
-      padding: 10px 16px;
-      font-size: 14px;
-      line-height: 1.5;
-      word-break: break-word;
-      position: relative;
-      animation: bubbleIn 0.2s ease;
-    }
-    .msg-group.mine .bubble {
-      background: var(--md-primary-container);
-      color: var(--md-on-primary-container);
-      border-radius: var(--radius-lg) var(--radius-lg) var(--radius-xs) var(--radius-lg);
-    }
-    .msg-group.others .bubble {
-      background: var(--md-surface-variant);
-      color: var(--md-on-surface);
-      border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--radius-xs);
-    }
-    .bubble .time {
-      display: block;
-      font-size: 10px;
-      margin-top: 4px;
-      opacity: 0.6;
-      text-align: right;
-    }
-
-    /* ── Date Chip ── */
-    .date-chip {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 8px 0;
-    }
-    .date-chip span {
-      font-size: 11px;
-      color: var(--md-on-surface-variant);
-      background: var(--md-surface-variant);
-      padding: 4px 12px;
-      border-radius: var(--radius-full);
-    }
-
-    /* ── Input Area ── */
-    .input-area {
-      padding: 12px 16px;
-      display: flex;
-      align-items: flex-end;
-      gap: 8px;
-      border-top: 1px solid var(--md-outline-variant);
-      background: var(--md-surface);
-      flex-shrink: 0;
-    }
-    .input-wrap {
-      flex: 1;
-      background: var(--md-surface-variant);
-      border-radius: var(--radius-xl);
-      padding: 8px 16px;
-      display: flex;
-      align-items: center;
-    }
-    .input-wrap input {
-      flex: 1;
-      border: none;
-      background: transparent;
-      font-family: inherit;
-      font-size: 14px;
-      color: var(--md-on-surface);
-      outline: none;
-      line-height: 1.5;
-    }
-    .input-wrap input::placeholder { color: var(--md-on-surface-variant); }
-
-    /* FAB send button */
-    .fab-send {
-      width: 48px; height: 48px;
-      border-radius: var(--radius-md);
-      background: var(--md-primary-container);
-      color: var(--md-on-primary-container);
-      border: none;
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: var(--elevation-1);
-      transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1);
-      flex-shrink: 0;
-    }
-    .fab-send:hover {
-      background: var(--md-primary);
-      color: var(--md-on-primary);
-      box-shadow: var(--elevation-2);
-      transform: scale(1.05);
-    }
-    .fab-send:active { transform: scale(0.95); }
-    .fab-send .material-icons-round { font-size: 22px; }
-
-    /* ── System Message ── */
-    .sys-msg {
-      text-align: center;
-      font-size: 12px;
-      color: var(--md-on-surface-variant);
-      padding: 4px 0;
-    }
-
-    /* ── Animations ── */
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes scaleIn {
-      from { opacity: 0; transform: scale(0.85); }
-      to { opacity: 1; transform: scale(1); }
-    }
-    @keyframes bubbleIn {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* ── Loading indicator ── */
-    .loading {
-      display: flex;
-      justify-content: center;
-      padding: 16px;
-      gap: 6px;
-    }
-    .loading span {
-      width: 8px; height: 8px;
-      background: var(--md-outline-variant);
-      border-radius: 50%;
-      animation: bounce 1.2s infinite ease-in-out;
-    }
-    .loading span:nth-child(2) { animation-delay: 0.2s; }
-    .loading span:nth-child(3) { animation-delay: 0.4s; }
-    @keyframes bounce {
-      0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
-      40% { transform: scale(1); opacity: 1; }
-    }
+	/* ── Chat ── */
+	.chat-wrap {
+	  width: 420px; height: 680px;
+	  display: flex; flex-direction: column;
+	  border-radius: var(--radius-xl);
+	  overflow: hidden; box-shadow: var(--e3);
+	  background: var(--md-surface);
+	}
+	.top-bar {
+	  background: var(--md-surface); padding: 0 16px;
+	  height: 64px; display: flex; align-items: center; gap: 12px;
+	  border-bottom: 1px solid var(--md-outline-variant); flex-shrink: 0;
+	}
+	.top-bar-avatar {
+	  width: 40px; height: 40px; border-radius: var(--radius-full);
+	  background: var(--md-primary-container);
+	  display: flex; align-items: center; justify-content: center;
+	  color: var(--md-on-primary-container); font-size: 20px;
+	}
+	.top-bar-info { flex: 1; }
+	.top-bar-title { font-size: 16px; font-weight: 600; color: var(--md-on-surface); }
+	.top-bar-sub { font-size: 12px; color: var(--md-on-surface-variant); }
+	.online-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #4CAF50; margin-right: 4px; vertical-align: middle; }
+	.icon-btn {
+	  width: 40px; height: 40px; border-radius: var(--radius-full);
+	  border: none; background: transparent; cursor: pointer;
+	  display: flex; align-items: center; justify-content: center;
+	  color: var(--md-on-surface-variant); transition: background 0.2s; flex-shrink: 0;
+	}
+	.icon-btn:hover { background: var(--md-surface-variant); }
+	.messages {
+	  flex: 1; overflow-y: auto;
+	  padding: 12px 16px; display: flex; flex-direction: column;
+	  gap: 2px; scroll-behavior: smooth;
+	}
+	.messages::-webkit-scrollbar { width: 4px; }
+	.messages::-webkit-scrollbar-thumb { background: var(--md-outline-variant); border-radius: 2px; }
+	.msg-group { display: flex; flex-direction: column; margin: 4px 0; }
+	.msg-group.mine { align-items: flex-end; }
+	.msg-group.others { align-items: flex-start; }
+	.msg-meta { font-size: 11px; color: var(--md-on-surface-variant); margin-bottom: 2px; padding: 0 12px; }
+	.bubble {
+	  max-width: 72%; padding: 10px 16px;
+	  font-size: 14px; line-height: 1.5; word-break: break-word;
+	  animation: bubbleIn 0.2s ease;
+	}
+	.msg-group.mine .bubble {
+	  background: var(--md-primary-container); color: var(--md-on-primary-container);
+	  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-xs) var(--radius-lg);
+	}
+	.msg-group.others .bubble {
+	  background: var(--md-surface-variant); color: var(--md-on-surface);
+	  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--radius-xs);
+	}
+	.bubble .time { display: block; font-size: 10px; margin-top: 4px; opacity: 0.6; text-align: right; }
+	.date-chip { display: flex; align-items: center; justify-content: center; margin: 8px 0; }
+	.date-chip span { font-size: 11px; color: var(--md-on-surface-variant); background: var(--md-surface-variant); padding: 4px 12px; border-radius: var(--radius-full); }
+	.input-area {
+	  padding: 12px 16px; display: flex; align-items: flex-end; gap: 8px;
+	  border-top: 1px solid var(--md-outline-variant); background: var(--md-surface); flex-shrink: 0;
+	}
+	.input-wrap {
+	  flex: 1; background: var(--md-surface-variant);
+	  border-radius: var(--radius-xl); padding: 8px 16px;
+	  display: flex; align-items: center;
+	}
+	.input-wrap input {
+	  flex: 1; border: none; background: transparent;
+	  font-family: inherit; font-size: 14px; color: var(--md-on-surface); outline: none;
+	}
+	.input-wrap input::placeholder { color: var(--md-on-surface-variant); }
+	.fab-send {
+	  width: 48px; height: 48px; border-radius: var(--radius-md);
+	  background: var(--md-primary-container); color: var(--md-on-primary-container);
+	  border: none; cursor: pointer;
+	  display: flex; align-items: center; justify-content: center;
+	  box-shadow: var(--e1); transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1); flex-shrink: 0;
+	}
+	.fab-send:hover { background: var(--md-primary); color: var(--md-on-primary); box-shadow: var(--e2); transform: scale(1.05); }
+	.fab-send:active { transform: scale(0.95); }
+	.loading { display: flex; justify-content: center; padding: 24px; gap: 6px; }
+	.loading span { width: 8px; height: 8px; background: var(--md-outline-variant); border-radius: 50%; animation: bounce 1.2s infinite ease-in-out; }
+	.loading span:nth-child(2) { animation-delay: 0.2s; }
+	.loading span:nth-child(3) { animation-delay: 0.4s; }
+	@keyframes scaleIn { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: scale(1); } }
+	@keyframes bubbleIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+	@keyframes bounce { 0%,80%,100% { transform: scale(0.6); opacity: 0.4; } 40% { transform: scale(1); opacity: 1; } }
   </style>
 </head>
 <body>
 
-<!-- 登录弹窗 -->
-<div class="scrim" id="loginScrim">
+<!-- 邮箱登录弹窗 -->
+<div class="scrim hidden" id="loginScrim">
   <div class="dialog">
-    <div class="dialog-icon">
-      <span class="material-icons-round">chat_bubble</span>
-    </div>
-    <h2>加入FiretiumChat</h2>
-    <p>输入一个昵称开始聊天</p>
-    <div class="text-field">
-      <input type="text" id="nicknameInput" placeholder=" " maxlength="16"
-        onkeydown="if(event.key==='Enter') joinChat()">
-      <label>昵称</label>
-    </div>
-    <div class="dialog-actions">
-      <button class="btn-filled" onclick="joinChat()">进入</button>
-    </div>
+	<div class="dialog-icon">
+	  <span class="material-icons-round">mail</span>
+	</div>
+	<h2>登录 FiretiumChat</h2>
+	<p>输入你的邮箱，我们会发送一封登录链接，点击即可进入FiretiumChat</p>
+	<div class="text-field">
+	  <input type="email" id="emailInput" placeholder=" " 
+		onkeydown="if(event.key==='Enter') sendMagicLink()">
+	  <label>邮箱地址</label>
+	</div>
+	<p class="send-hint" id="sendHint"></p>
+	<div class="dialog-actions">
+	  <button class="btn-filled" id="sendBtn" onclick="sendMagicLink()">
+		发送登录链接
+	  </button>
+	</div>
   </div>
 </div>
 
 <!-- 聊天主界面 -->
 <div class="chat-wrap">
   <div class="top-bar">
-    <div class="top-bar-avatar">
-      <span class="material-icons-round">forum</span>
-    </div>
-    <div class="top-bar-info">
-      <div class="top-bar-title">Firetium Chat</div>
-      <div class="top-bar-sub"><span class="online-dot"></span>Online</div>
-    </div>
+	<div class="top-bar-avatar">
+	  <span class="material-icons-round">forum</span>
+	</div>
+	<div class="top-bar-info">
+	  <div class="top-bar-title">FiretiumChat</div>
+	  <div class="top-bar-sub">
+		<span class="online-dot"></span>实时在线
+		&nbsp;·&nbsp;
+		<span class="material-icons-round" style="font-size:12px;vertical-align:middle">person</span>
+		<span id="currentNickname"></span>
+	  </div>
+	</div>
+	<button class="icon-btn" onclick="logout()" title="退出登录">
+	  <span class="material-icons-round">logout</span>
+	</button>
   </div>
 
   <div class="messages" id="messages">
-    <div class="loading"><span></span><span></span><span></span></div>
+	<div class="loading"><span></span><span></span><span></span></div>
   </div>
 
   <div class="input-area">
-    <div class="input-wrap">
-      <input type="text" id="msgInput" placeholder="发送消息…" maxlength="200"
-        onkeydown="if(event.key==='Enter') sendMsg()">
-    </div>
-    <button class="fab-send" onclick="sendMsg()">
-      <span class="material-icons-round">send</span>
-    </button>
+	<div class="input-wrap">
+	  <input type="text" id="msgInput" placeholder="发送消息…" maxlength="200"
+		onkeydown="if(event.key==='Enter') sendMsg()">
+	</div>
+	<button class="fab-send" onclick="sendMsg()">
+	  <span class="material-icons-round">send</span>
+	</button>
   </div>
 </div>
 
@@ -427,86 +261,134 @@
   let myName = '';
   let lastDate = '';
 
-  function joinChat() {
-    const name = document.getElementById('nicknameInput').value.trim();
-    if (!name) { document.getElementById('nicknameInput').focus(); return; }
-    myName = name;
-    document.getElementById('loginScrim').style.display = 'none';
-    init();
+  // 获取邮箱前缀作为昵称
+  function emailToName(email) {
+	return email ? email.split('@')[0] : '用户';
+  }
+
+  window.onload = async () => {
+	const { data: { session } } = await db.auth.getSession();
+	if (session) {
+	  myName = emailToName(session.user.email);
+	  document.getElementById('currentNickname').textContent = myName;
+	  init();
+	} else {
+	  document.getElementById('loginScrim').classList.remove('hidden');
+	}
+
+	// 监听登录状态变化（用户点击邮件链接跳回来时触发）
+	db.auth.onAuthStateChange((event, session) => {
+	  if (event === 'SIGNED_IN' && session) {
+		myName = emailToName(session.user.email);
+		document.getElementById('currentNickname').textContent = myName;
+		document.getElementById('loginScrim').classList.add('hidden');
+		init();
+	  }
+	});
+  };
+
+  async function sendMagicLink() {
+	const email = document.getElementById('emailInput').value.trim();
+	const hint = document.getElementById('sendHint');
+	const btn = document.getElementById('sendBtn');
+	if (!email || !email.includes('@')) {
+	  hint.textContent = '请输入有效的邮箱地址';
+	  hint.className = 'send-hint error';
+	  return;
+	}
+	btn.disabled = true;
+	hint.textContent = '发送中…';
+	hint.className = 'send-hint';
+
+	const { error } = await db.auth.signInWithOtp({
+	  email,
+	  options: { emailRedirectTo: window.location.href }
+	});
+
+	if (error) {
+	  hint.textContent = '发送失败，请稍后重试';
+	  hint.className = 'send-hint error';
+	  btn.disabled = false;
+	} else {
+	  hint.textContent = '✅ 登录链接已发送，请查收邮件';
+	  hint.className = 'send-hint success';
+	  btn.textContent = '重新发送';
+	  btn.disabled = false;
+	}
+  }
+
+  async function logout() {
+	await db.auth.signOut();
+	myName = '';
+	document.getElementById('messages').innerHTML = '<div class="loading"><span></span><span></span><span></span></div>';
+	document.getElementById('currentNickname').textContent = '';
+	document.getElementById('emailInput').value = '';
+	document.getElementById('sendHint').textContent = '';
+	document.getElementById('sendBtn').textContent = '发送登录链接';
+	document.getElementById('loginScrim').classList.remove('hidden');
   }
 
   async function init() {
-    await loadHistory();
-    subscribe();
+	await loadHistory();
+	subscribe();
   }
 
   async function loadHistory() {
-    const { data } = await db
-      .from('messages')
-      .select('*')
-      .order('created_at', { ascending: true })
-      .limit(80);
-
-    document.getElementById('messages').innerHTML = '';
-    lastDate = '';
-    if (data) data.forEach(m => appendMsg(m));
-    scrollBottom();
+	const { data } = await db
+	  .from('messages')
+	  .select('*')
+	  .order('created_at', { ascending: true })
+	  .limit(80);
+	document.getElementById('messages').innerHTML = '';
+	lastDate = '';
+	if (data) data.forEach(m => appendMsg(m));
+	scrollBottom();
   }
 
   function subscribe() {
-    db.channel('public-chat')
-      .on('postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages' },
-        payload => {
-          appendMsg(payload.new);
-          scrollBottom();
-        })
-      .subscribe();
+	db.channel('public-chat')
+	  .on('postgres_changes',
+		{ event: 'INSERT', schema: 'public', table: 'messages' },
+		payload => { appendMsg(payload.new); scrollBottom(); })
+	  .subscribe();
   }
 
   function appendMsg(msg) {
-    const container = document.getElementById('messages');
-    const isMine = msg.username === myName;
-
-    // Date chip
-    const msgDate = new Date(msg.created_at).toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' });
-    if (msgDate !== lastDate) {
-      const chip = document.createElement('div');
-      chip.className = 'date-chip';
-      chip.innerHTML = `<span>${msgDate}</span>`;
-      container.appendChild(chip);
-      lastDate = msgDate;
-    }
-
-    const time = new Date(msg.created_at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
-
-    const group = document.createElement('div');
-    group.className = `msg-group ${isMine ? 'mine' : 'others'}`;
-    group.innerHTML = `
-      ${!isMine ? `<div class="msg-meta">${escHtml(msg.username)}</div>` : ''}
-      <div class="bubble">
-        ${escHtml(msg.content)}
-        <span class="time">${time}</span>
-      </div>
-    `;
-    container.appendChild(group);
+	const container = document.getElementById('messages');
+	const isMine = msg.username === myName;
+	const msgDate = new Date(msg.created_at).toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' });
+	if (msgDate !== lastDate) {
+	  const chip = document.createElement('div');
+	  chip.className = 'date-chip';
+	  chip.innerHTML = `<span>${msgDate}</span>`;
+	  container.appendChild(chip);
+	  lastDate = msgDate;
+	}
+	const time = new Date(msg.created_at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+	const group = document.createElement('div');
+	group.className = `msg-group ${isMine ? 'mine' : 'others'}`;
+	group.innerHTML = `
+	  ${!isMine ? `<div class="msg-meta">${esc(msg.username)}</div>` : ''}
+	  <div class="bubble">${esc(msg.content)}<span class="time">${time}</span></div>
+	`;
+	container.appendChild(group);
   }
 
   async function sendMsg() {
-    const input = document.getElementById('msgInput');
-    const text = input.value.trim();
-    if (!text || !myName) return;
-    input.value = '';
-    await db.from('messages').insert({ username: myName, content: text });
+	const input = document.getElementById('msgInput');
+	const text = input.value.trim();
+	if (!text || !myName) return;
+	input.value = '';
+	await db.from('messages').insert({ username: myName, content: text });
   }
 
   function scrollBottom() {
-    const el = document.getElementById('messages');
-    el.scrollTop = el.scrollHeight;
+	const el = document.getElementById('messages');
+	el.scrollTop = el.scrollHeight;
   }
 
-  function escHtml(str) {
-    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  function esc(str) {
+	return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 </script>
 </body>
